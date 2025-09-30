@@ -5,34 +5,28 @@ import type {
   StrategyPerProviderContext,
 } from './base-evaluation-strategy';
 import { BaseEvaluationStrategy } from './base-evaluation-strategy';
-import type { EvaluationContext, FlagValue } from '@openfeature/core';
-import type { Provider } from '../../provider';
-import { GeneralError } from '@openfeature/core';
+import type { EvaluationContext, FlagValue } from '../../../evaluation';
+import { GeneralError } from '../../../errors';
 
-/**
- * Evaluate all providers in parallel and compare the results.
- * If the values agree, return the value
- * If the values disagree, return the value from the configured "fallback provider" and execute the "onMismatch"
- * callback if defined
- */
-export class ComparisonStrategy extends BaseEvaluationStrategy {
+export class ComparisonStrategy<TProviderStatus, TProvider> extends BaseEvaluationStrategy<TProviderStatus, TProvider> {
   override runMode = 'parallel' as const;
 
   constructor(
-    private fallbackProvider: Provider,
-    private onMismatch?: (resolutions: ProviderResolutionResult<FlagValue>[]) => void,
+    statusEnum: Record<string, TProviderStatus>,
+    private fallbackProvider: TProvider,
+    private onMismatch?: (resolutions: ProviderResolutionResult<FlagValue, TProviderStatus, TProvider>[]) => void,
   ) {
-    super();
+    super(statusEnum);
   }
 
   override determineFinalResult<T extends FlagValue>(
-    strategyContext: StrategyPerProviderContext,
+    strategyContext: StrategyPerProviderContext<TProviderStatus, TProvider>,
     context: EvaluationContext,
-    resolutions: ProviderResolutionResult<T>[],
-  ): FinalResult<T> {
+    resolutions: ProviderResolutionResult<T, TProviderStatus, TProvider>[],
+  ): FinalResult<T, TProviderStatus, TProvider> {
     let value: T | undefined;
-    let fallbackResolution: ProviderResolutionSuccessResult<T> | undefined;
-    let finalResolution: ProviderResolutionSuccessResult<T> | undefined;
+    let fallbackResolution: ProviderResolutionSuccessResult<T, TProviderStatus, TProvider> | undefined;
+    let finalResolution: ProviderResolutionSuccessResult<T, TProviderStatus, TProvider> | undefined;
     let mismatch = false;
     for (const [i, resolution] of resolutions.entries()) {
       if (this.hasError(resolution)) {

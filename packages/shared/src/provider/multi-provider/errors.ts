@@ -1,5 +1,5 @@
-import type { ErrorCode } from '@openfeature/core';
-import { GeneralError, OpenFeatureError } from '@openfeature/core';
+import type { ErrorCode } from '../../evaluation';
+import { GeneralError, OpenFeatureError } from '../../errors';
 import type { RegisteredProvider } from './types';
 
 export class ErrorWithCode extends OpenFeatureError {
@@ -34,9 +34,9 @@ export const constructAggregateError = (providerErrors: { error: unknown; provid
   );
 };
 
-export const throwAggregateErrorFromPromiseResults = (
+export const throwAggregateErrorFromPromiseResults = <TProvider>(
   result: PromiseSettledResult<unknown>[],
-  providerEntries: RegisteredProvider[],
+  providerEntries: RegisteredProvider<TProvider>[],
 ) => {
   const errors = result
     .map((r, i) => {

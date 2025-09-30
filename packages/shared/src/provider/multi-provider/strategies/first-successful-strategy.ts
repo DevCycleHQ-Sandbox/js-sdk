@@ -1,27 +1,24 @@
 import type { FinalResult, ProviderResolutionResult, StrategyPerProviderContext } from './base-evaluation-strategy';
 import { BaseEvaluationStrategy } from './base-evaluation-strategy';
-import type { EvaluationContext, FlagValue } from '@openfeature/core';
+import type { EvaluationContext, FlagValue } from '../../../evaluation';
 
-/**
- * Return the first result that did NOT result in an error
- * If any provider in the course of evaluation returns or throws an error, ignore it as long as there is a successful result
- * If there is no successful result, throw all errors
- */
-export class FirstSuccessfulStrategy extends BaseEvaluationStrategy {
+export class FirstSuccessfulStrategy<TProviderStatus, TProvider> extends BaseEvaluationStrategy<
+  TProviderStatus,
+  TProvider
+> {
   override shouldEvaluateNextProvider<T extends FlagValue>(
-    strategyContext: StrategyPerProviderContext,
+    strategyContext: StrategyPerProviderContext<TProviderStatus, TProvider>,
     context: EvaluationContext,
-    result: ProviderResolutionResult<T>,
+    result: ProviderResolutionResult<T, TProviderStatus, TProvider>,
   ): boolean {
-    // evaluate next only if there was an error
     return this.hasError(result);
   }
 
   override determineFinalResult<T extends FlagValue>(
-    strategyContext: StrategyPerProviderContext,
+    strategyContext: StrategyPerProviderContext<TProviderStatus, TProvider>,
     context: EvaluationContext,
-    resolutions: ProviderResolutionResult<T>[],
-  ): FinalResult<T> {
+    resolutions: ProviderResolutionResult<T, TProviderStatus, TProvider>[],
+  ): FinalResult<T, TProviderStatus, TProvider> {
     const finalResolution = resolutions[resolutions.length - 1];
     if (this.hasError(finalResolution)) {
       return this.collectProviderErrors(resolutions);

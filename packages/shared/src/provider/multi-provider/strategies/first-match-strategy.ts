@@ -1,17 +1,13 @@
 import type { FinalResult, ProviderResolutionResult, StrategyPerProviderContext } from './base-evaluation-strategy';
 import { BaseEvaluationStrategy } from './base-evaluation-strategy';
-import type { EvaluationContext, FlagValue } from '@openfeature/core';
-import { ErrorCode } from '@openfeature/core';
+import type { EvaluationContext, FlagValue } from '../../../evaluation';
+import { ErrorCode } from '../../../evaluation';
 
-/**
- * Return the first result that did not indicate "flag not found".
- * If any provider in the course of evaluation returns or throws an error, throw that error
- */
-export class FirstMatchStrategy extends BaseEvaluationStrategy {
+export class FirstMatchStrategy<TProviderStatus, TProvider> extends BaseEvaluationStrategy<TProviderStatus, TProvider> {
   override shouldEvaluateNextProvider<T extends FlagValue>(
-    strategyContext: StrategyPerProviderContext,
+    strategyContext: StrategyPerProviderContext<TProviderStatus, TProvider>,
     context: EvaluationContext,
-    result: ProviderResolutionResult<T>,
+    result: ProviderResolutionResult<T, TProviderStatus, TProvider>,
   ): boolean {
     if (this.hasErrorWithCode(result, ErrorCode.FLAG_NOT_FOUND)) {
       return true;
@@ -23,10 +19,10 @@ export class FirstMatchStrategy extends BaseEvaluationStrategy {
   }
 
   override determineFinalResult<T extends FlagValue>(
-    strategyContext: StrategyPerProviderContext,
+    strategyContext: StrategyPerProviderContext<TProviderStatus, TProvider>,
     context: EvaluationContext,
-    resolutions: ProviderResolutionResult<T>[],
-  ): FinalResult<T> {
+    resolutions: ProviderResolutionResult<T, TProviderStatus, TProvider>[],
+  ): FinalResult<T, TProviderStatus, TProvider> {
     const finalResolution = resolutions[resolutions.length - 1];
     if (this.hasError(finalResolution)) {
       return this.collectProviderErrors(resolutions);
